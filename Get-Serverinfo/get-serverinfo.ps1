@@ -45,25 +45,25 @@ param()
         Write-Verbose "Looking for servers.."
         $ServerObj = New-Object psObject
         if(PingServer -hostname $server.dnshostname -eq $true){
-            Write-Verbose "Creating CIM Sessions using kerberos authentication.."
-            $session = New-CimSession -Authentication Kerberos -PSComputerName $server.name
-          #  $Bios = Get-CimInstance -ClassName cim_bioselement  -Property * -ComputerName $server.Name -ErrorAction Stop -ErrorVariable CurrentError
-           # $Computersystem = Get-WmiObject Win32_Computersystem -Property * -ComputerName $Server.Name -ErrorAction Stop -ErrorVariable CurrentError
-           # $OperatingSystem = Get-WmiObject Win32_OperatingSystem -Property * -ComputerName $Server.Name -ErrorAction Stop -ErrorVariable CurrentError
-           # $WindowsFeatures = Get-WmiObject Win32_OptionalFeature -Filter {InstallState = '1'} -ComputerName $Server.Name -ErrorAction Stop -ErrorVariable CurrentError
-           # $NetworkAdapter = Get-WmiObject Win32_NetworkAdapterConfiguration -Filter {IPEnabled = 'True'} -ComputerName $Server.Name -ErrorAction Stop -ErrorVariable CurrentError
-            $Properties = [Ordered]@{
-            'ComputerName' = $server.Name
-            'NICs' = (Get-CimInstance -ClassName win32_networkadapterconfiguration -Filter "IPEnabled = 'true'").caption.split("]")[1].trimstart()
-            'SerialNumber' = $Bios.SerialNumber
-            'ManuFacturer' = $Computersystem.Manufacturer
-            'Model' = $Computersystem.Model
-            'OS' = $OperatingSystem.Caption
-            'OSVersion' = $OperatingSystem.Version
-#                    'OSAcrhitecture' = $OperatingSystem.OSArchitecture
-            'InstalledWinFeatures' = ((($WindowsFeatures | Sort Name).Name | Out-String).Trim())
+            try
+            {
+                Write-Verbose "Creating CIM Sessions using kerberos authentication.."
+                $session = New-CimSession -Authentication Kerberos -PSComputerName $server.name
+                $Properties = [Ordered]@{
+                'ComputerName' = $server.Name
+                'NICs and Addresses' = Get-CimInstance -CimSession $Session -ClassName win32_networkadapterconfiguration -Filter "IPEnabled = 'true'" | select @{Name='Description';Expression={[string]::join(";",($_.description))}}, @{Name='IPAddress';Expression={[string]::join(";",($_.ipaddress))}} 
+                'SMBIOSBIOSVersion' = (Get-CimInstance -CimSession $session -ClassName win32_bios).smbiosbiosversion  
+                'ManuFacturer' = (Get-CimInstance -CimSession $session -ClassName win32_computersystem).manufacturer
+                'Model' = (Get-CimInstance -CimSession $session -ClassName win32_computersystem).model
+                'OS' = (Get-CimInstance -CimSession $session -ClassName win32_operatingsystem).caption
+                'OSVersion' = (Get-CimInstance -CimSession $session -ClassName win32_operatingsystem).version
+                'InstalledWinFeatures' = ((($WindowsFeatures | Sort Name).Name | Out-String).Trim())
+                }
+            }
+            catch
+            {
+                Write-Error -Message "Could not compute with computer $($server.name)" -erroraction Continue
             }
         }
     }
-
 }
