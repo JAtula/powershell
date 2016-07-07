@@ -39,7 +39,8 @@ workflow Get-ServerInfo ()
                             'InstalledFeatures' = $(((Get-CimInstance -CimSession $session -ClassName win32_optionalfeature | sort name).name).trim())
                             'Ping' = 'True'
                         }
-                        $properties
+                        $obj = New-Object -TypeName psobject -Property $Properties
+                        $obj
  
              }
 
@@ -53,7 +54,7 @@ function Search-OnlineServers{
     $searcher = New-Object System.DirectoryServices.DirectorySearcher
     $temp = Get-ADComputer -Filter {operatingsystem -like "*server*"} -SearchBase "$($searcher.SearchRoot.Path.Substring(7))" -SearchScope Subtree -Properties *
         ForEach ($t in $temp){
-            if((Test-NetConnection -ComputerName $t.name -Hops 1).pingsucceeded -eq 'true'){
+            if((Test-NetConnection -ComputerName $t.name -Hops 1 -WarningAction SilentlyContinue).pingsucceeded -eq 'true'){
                 [array]$servers += $t 
             }
         }
