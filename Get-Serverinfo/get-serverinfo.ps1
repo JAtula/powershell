@@ -1,69 +1,61 @@
-function Search-servers
-{
-    Get-ADComputer -Filter {operatingsystem -like "*server*"} -SearchBase "$($searcher.SearchRoot.Path.Substring(7))" -SearchScope Subtree -Properties *
-    #return $servers
-}
-function PingServer() {
-    param([string]$hostname)
-    $ping = new-object System.Net.NetworkInformation.Ping
-    $Reply = $ping.send($HostName)
-    if ($Reply.status –eq "Success")
-    {
-        return $true
-    }
-        return $false
-}
-
 <#
 .Synopsis
-   Short description
+   Scan a domain environment for computers with OS like *server* and are online. © Juhani Atula 2016
 .DESCRIPTION
-   Long description
+   Scan a domain environment for computers with OS like *server* and are online. © Juhani Atula 2016
 .EXAMPLE
-   Example of how to use this workflow
-.EXAMPLE
-   Another example of how to use this workflow
-.INPUTS
-   Inputs to this workflow (if any)
-.OUTPUTS
-   Output from this workflow (if any)
-.NOTES
-   General notes
-.FUNCTIONALITY
-   The functionality that best describes this workflow
+   Get-ServerInfo -outvariable table
 #>
 workflow Get-ServerInfo ()
 {
-[CmdletBinding(
-HelpUri = 'http://www.microsoft.com/',
-ConfirmImpact='Medium')]
-param()
+[CmdletBinding(HelpUri = 'http://github.com/JAtula',
+                ConfirmImpact='Medium')]
+                param()
 
-    $servers = Search-servers
+    $servers = Search-Onlineservers
+    Write-Verbose "Querying CIM classes for servers that are online. `n"
+    
     foreach -parallel ($server in $servers)
     {
-        Write-Verbose "Looking for servers.."
-        $ServerObj = New-Object psObject
-        if(PingServer -hostname $server.dnshostname -eq $true){
-            try
-            {
-                Write-Verbose "Creating CIM Sessions using kerberos authentication.."
-                $session = New-CimSession -Authentication Kerberos -PSComputerName $server.name
-                $Properties = [Ordered]@{
-                'ComputerName' = $server.Name
-                'NICs and Addresses' = Get-CimInstance -CimSession $Session -ClassName win32_networkadapterconfiguration -Filter "IPEnabled = 'true'" | select @{Name='Description';Expression={[string]::join(";",($_.description))}}, @{Name='IPAddress';Expression={[string]::join(";",($_.ipaddress))}} 
-                'SMBIOSBIOSVersion' = (Get-CimInstance -CimSession $session -ClassName win32_bios).smbiosbiosversion  
-                'ManuFacturer' = (Get-CimInstance -CimSession $session -ClassName win32_computersystem).manufacturer
-                'Model' = (Get-CimInstance -CimSession $session -ClassName win32_computersystem).model
-                'OS' = (Get-CimInstance -CimSession $session -ClassName win32_operatingsystem).caption
-                'OSVersion' = (Get-CimInstance -CimSession $session -ClassName win32_operatingsystem).version
-                'InstalledWinFeatures' = ((($WindowsFeatures | Sort Name).Name | Out-String).Trim())
-                }
-            }
-            catch
-            {
-                Write-Error -Message "Could not compute with computer $($server.name)" -erroraction Continue
+        sequence
+        {
+        
+            Write-Verbose "Found..$($server.name)"
+
+            inlinescript{
+                        Write-Verbose "$($using:server.name) online. Creating CIM session with it."
+                        $session = New-CimSession -ComputerName $using:server.name -Authentication kerberos
+
+                        $Properties = [Ordered]@{
+                            'ComputerName' = $using:server.Name
+                            'InstallDate' = $((Get-CimInstance -CimSession $session -ClassName win32_operatingsystem).InstallDate)
+                            'NIC' = $((Get-CimInstance -CimSession $session win32_networkadapterconfiguration -Filter "IPEnabled = 'true'" | select @{Name='Description';Expression={[string]::join(";",($_.description))}}))
+                            'IPAddress' = $((Get-CimInstance -CimSession $session -ClassName win32_networkadapterconfiguration -Filter "IPEnabled = 'true'" | select @{Name='IPAddress';Expression={[string]::join(";",($_.ipaddress))}}))
+                            'SMBIOSBIOSVersion' = $((Get-CimInstance -CimSession $session -ClassName win32_bios).smbiosbiosversion)  
+                            'ManuFacturer' = $((Get-CimInstance -CimSession $session -ClassName win32_computersystem).manufacturer)
+                            'Model' = $((Get-CimInstance -CimSession $session -ClassName win32_computersystem).model)
+                            'OS' = $((Get-CimInstance -CimSession $session -ClassName win32_operatingsystem).caption)
+                            'OSVersion' = $((Get-CimInstance -CimSession $session -ClassName win32_operatingsystem).version)
+                            'InstalledFeatures' = $(((Get-CimInstance -CimSession $session -ClassName win32_optionalfeature | sort name).name).trim())
+                            'Ping' = 'True'
+                        }
+                        $properties
+ 
+             }
+
+        }
+
+     }
+    
+}
+
+function Search-OnlineServers{
+    $searcher = New-Object System.DirectoryServices.DirectorySearcher
+    $temp = Get-ADComputer -Filter {operatingsystem -like "*server*"} -SearchBase "$($searcher.SearchRoot.Path.Substring(7))" -SearchScope Subtree -Properties *
+        ForEach ($t in $temp){
+            if((Test-NetConnection -ComputerName $t.name -Hops 1).pingsucceeded -eq 'true'){
+                [array]$servers += $t 
             }
         }
-    }
+    $servers
 }
