@@ -13,7 +13,6 @@ workflow Get-ServerInfo ()
                 param()
 
     $servers = Search-Onlineservers
-    Write-Verbose "Querying CIM classes for servers that are online. `n"
     
     foreach -parallel ($server in $servers)
     {
