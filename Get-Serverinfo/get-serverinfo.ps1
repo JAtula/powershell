@@ -29,8 +29,8 @@ workflow Get-ServerInfo ()
                         $Properties = [Ordered]@{
                             'ComputerName' = $using:server.Name
                             'InstallDate' = $((Get-CimInstance -CimSession $session -ClassName win32_operatingsystem).InstallDate)
-                            'NIC' = $((Get-CimInstance -CimSession $session win32_networkadapterconfiguration -Filter "IPEnabled = 'true'" | select @{Name='Description';Expression={[string]::join(";",($_.description))}}))
-                            'IPAddress' = $((Get-CimInstance -CimSession $session -ClassName win32_networkadapterconfiguration -Filter "IPEnabled = 'true'" | select @{Name='IPAddress';Expression={[string]::join(";",($_.ipaddress))}}))
+                            'NIC' = $(((Get-CimInstance -CimSession $session win32_networkadapterconfiguration -Filter "IPEnabled = 'true'" | select @{Name='Description';Expression={[string]::join(";",($_.description))}}).description))
+                            'IPAddress' = $(((Get-CimInstance -CimSession $session -ClassName win32_networkadapterconfiguration -Filter "IPEnabled = 'true'" | select @{Name='IPAddress';Expression={[string]::join(";",($_.ipaddress))}}).IPAddress))
                             'SMBIOSBIOSVersion' = $((Get-CimInstance -CimSession $session -ClassName win32_bios).smbiosbiosversion)  
                             'ManuFacturer' = $((Get-CimInstance -CimSession $session -ClassName win32_computersystem).manufacturer)
                             'Model' = $((Get-CimInstance -CimSession $session -ClassName win32_computersystem).model)
