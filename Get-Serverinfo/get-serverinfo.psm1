@@ -2,7 +2,8 @@
 .Synopsis
    Scan a domain environment for computers with OS like *server* and are online. © Juhani Atula 2016
 .DESCRIPTION
-   Scan a domain environment for computers with OS like *server* and are online. © Juhani Atula 2016
+   Scan a domain environment for computers with OS like *server* and are online. Needs Powershell version 4.0
+   or higher to work. © Juhani Atula 2016
 .EXAMPLE
    Get-ServerInfo -outvariable table
 #>
