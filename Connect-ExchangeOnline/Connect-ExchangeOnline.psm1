@@ -71,7 +71,7 @@ function Connect-ExchangeOnline
             #Connect to Exchange Online
             Write-Verbose "Connect to Exchange Online"
             $PSSession = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri "https://outlook.office365.com/powershell-liveid/" -Credential $cred -Authentication Basic -AllowRedirection -ErrorAction Stop 
-            Import-Module (Import-PSSession $PSSession -AllowClobber) -Global | Out-Null 
+            Import-Module (Import-PSSession $PSSession -AllowClobber -DisableNameChecking) -Global | Out-Null 
         }
         catch{
             write-host $Error[0].Exception.Message -ForegroundColor Red
