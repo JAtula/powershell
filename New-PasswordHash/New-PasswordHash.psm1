@@ -1,6 +1,6 @@
 ﻿<#
 .Author
-    Juhani Atula © 2016 v. 1.0
+    Juhani Atula © 2016 v. 1.1
 .Synopsis
    Create a AES key and Password hash and dump them to .txt files.
 .Description
