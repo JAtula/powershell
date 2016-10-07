@@ -32,31 +32,26 @@ function New-PasswordHash
         $AESKey = New-Object Byte[] 32
         [Security.Cryptography.RNGCryptoServiceProvider]::Create().GetBytes($AESKey)
 
-        try
-        {
-            Write-Verbose "Sign password with key and save the key and password hash to .txt files.."
-            #Any existing AES key will be overwritten.
-            if($password.Count -gt 1){
-                foreach($pass in $password) {
-                    $i++
-                    $secureStringPwd = $pass | ConvertTo-SecureString -AsPlainText -Force
+        foreach ($pass in $password){
+        
+            try
+            {
+                Write-Verbose "Sign password with key and save the key and password hash to .txt files.."
+                #Any existing AES key will be overwritten.
 
-                    Set-Content "$filepath\key$i.txt" $AESKey -ErrorAction Stop
-                    $finalpass = $secureStringPwd | ConvertFrom-SecureString -Key $AESKey
-                    Set-Content "$filepath\hash$i.txt" $finalpass
-                }
-            }else{
-                $secureStringPwd = $password | ConvertTo-SecureString -AsPlainText -Force
-                
-                Set-Content "$filepath\key.txt" $AESKey -ErrorAction Stop
+                $i++
+                $secureStringPwd = $pass | ConvertTo-SecureString -AsPlainText -Force
+
+                Set-Content "$filepath\key$i.txt" $AESKey -ErrorAction Stop
                 $finalpass = $secureStringPwd | ConvertFrom-SecureString -Key $AESKey
-                Set-Content "$filepath\hash.txt" $finalpass 
-            }
-        }
-        catch
-        {
-            Write-Host "Path not found." -ForegroundColor Red
-        }
+                Set-Content "$filepath\hash$i.txt" $finalpass
 
+            }
+            catch
+            {
+                Write-Host "Path not found." -ForegroundColor Red
+            }
+
+        }
 }
 
